@@ -28,9 +28,36 @@ challenge: the handling of code comments. Parser and compiler writers
 frequently waive their hands, as comments in code are treated as white space and
 are usually ignored during parsing.
 
+\subsection{Context}
+
+Pretty-printing can be approached in several ways, and there are several
+contexts where pretty-printing code might be desirable. This paper assumes that
+the goal of pretty-printing is a modified serialized form of the initial source
+code, usually as a file on hard disk.This is crucial as not having to serialize
+at the end (like in an interactive editor or IDE) might lead to different design
+decisions.
+
+So we picture ourselves in a workflow of \emph{reading code in --
+processing it -- and writing it out again}, like typical command-line tools
+would do. Within this context there are again multiple ways to address the
+\emph{"processing it"} part. Parsing the source code seems to make sense, as we
+want to base text layout decisions on syntactical correctness, like keeping two
+adjacent tokens on the same line when they would have different semantics when
+split across two. So we have to recognize grammatical structures.
+
+Then the question arises what to do with the parsed tokens (or technically
+speaking, which parse actions to deploy). One approach would be to serialize the
+tokens back immediately, applying whitespace as we go along. While tempting and
+with its own strengths, this approach becomes tedious as soon as you have to handle
+deeply nested structures where you want to match begin and end actions.
+
+So we came out constructing a parse, or syntax, tree, which is a common parse
+result. The serial source text is transfered into a hierarchical tree structure
+where nodes represent elementary code fragments, or \emph{lexemes}.
+
 \subsection{Application background}
 
-As background information, this report is based on experiences gleaned from
+As a background information, this report is based on experiences gleaned from
 writing a custom pretty-printer for the JavaScript programming language. The
 implementation language for the pretty-printer was Python. But all results are
 general enough that they should be applicable to different implementation and
@@ -39,7 +66,7 @@ comments.
 
 \subsection{JavaScript comments - a quick look}
 
-JavaScript has C++-like comments. Just as a reminder, here are the two ways you
+JavaScript has C++-like comments. As a reminder, here are the two ways you
 can add comments in source code:
 
 \textit{Block comments}
@@ -55,11 +82,11 @@ Examples:
 
   var a = 3; /* block comment at end of line */
 
-  var b = 4; /* dangling of code
+  var b = 4; /* dangling off code
      and spanning multiple
      lines */
 
-  var c /* in the middle */ = /* of some expression*/ 5;
+  var c /* in the middle */ = /* of some expression */ 5;
 
 \end{verbatim}
 
@@ -81,7 +108,65 @@ Examples:
 
 \end{verbatim}
 
-\section{Approaches}
+\section{Approaching the Issue}
+
+\subsection{Using an Abstract Syntax Tree}
+
+An abstract syntax tree (\emph{AST}) captures the essential structure of a
+concrete piece of code. It groups tokens together in subtrees, and composes
+those subtrees to represent larger constructs until it eventually captures the
+entire source code, e.g. the contents of a source file. ASTs typically leave out
+information that is implicit, and can be inferred from the AST later on. For
+example, in a language like JavaScript, the list of formal parameters in a
+function declaration is a list of legal identifiers, separated by commas, and
+enclosed by parentheses.
+
+\begin{verbatim}
+   function foo (a,b,c) { ... }
+\end{verbatim}
+
+In a tree representation, this list of formal parameters can be represented
+without the parens and the commas, like \texttt{(params (a b c))}. The
+(synthetic) tree node \emph{params} has three identifier children, \emph{a},
+\emph{b} and \emph{c}. That's it, just having the root node named "param"
+suffices to indicate that in the original source parentheses and commas where
+present.
+
+But using such an abstract tree poses two problems. Firstly, the parse
+introduces synthetic nodes, i.e. nodes which do not represent lexemes. As the
+\emph{next} function can only attach comments to tokens actually found in the
+code, the parser needs to make sure that comments coming piggy-back from
+\emph{next} get hooked up elsewhere. Otherwise they are lost when e.g. they come
+with the opening parenthesis token as this is discarded in the tree.
+
+Secondly, even if all comments are carried over to the AST, you run into
+undecidable situations when trying to serialize them out again. As an example,
+take the case of a block comment in an empty list. In the AST the only place to
+attach the comment is with the list node that has no children, or with the
+parent construct the list is part of (Remember that
+comments are not part of the AST itself, so are not first class children or
+siblings of
+other nodes,  but are attached via a separate property to proper AST nodes).
+
+[Explanation not good]
+
+From the standpoint of the AST these constructs become indistinguishable.
+
+\begin{verbatim}
+
+  var a = [ /* Put stuff in here! */ ];
+
+  var a = [] /* Put stuff in here! */ ;
+
+\end{verbatim}
+
+but ostensibly with implications for the semantics of the comment.
+
+As we saw, closing brackets of any kind of construct are
+particularly prone to these kinds of problems.
+
+
+
 
 \subsection{The Tokenizer needs to provide Comments as Tokens}
 
@@ -156,11 +241,11 @@ visitor pattern.
 \item If so, you serialize these comments first, then the node itself.
 \item In serializing the comments, you evaluate current indentation and line
 information attributed to the comment tokens, in order to integrate them with
-the syntactical code. (This might involve some effort, e.g. distinguishing
+the syntactical code. This might involve some effort, e.g. distinguishing
 between block and line-end comments, whether to start them at the current or a
 new line, and if they span multiple lines (for block comments), how to indent
 subsequent comment lines before the comment ends. Then, normal indentation
-must be restored for the next code lexeme.)
+must be restored for the next code lexeme.
 \end{itemize}
 
 \section{Conclusion}
@@ -171,7 +256,7 @@ employ a concrete syntax tree that captures all lexemes of the token stream. You
 can then associate comment tokens with syntactical tokens, without interfering
 with the grammatical parsing of the source syntax. 
 
-\bibstyle{normal}
+\bibliographystyle{plain}
 \bibliography{prettyp_comp_writers}
 
 \end{document}
