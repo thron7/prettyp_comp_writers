@@ -13,14 +13,14 @@ Thomas Herchenroeder\\
 \begin{abstract} 
 Pretty-printing, i.e. the regularly formatting of source code
 in terms of line breaks and indentation, poses extra challenges to compiler
-writers, namely handling of code comments. This paper discusses problems and
+writers, namely handling of code comments. This experience report discusses problems and
 approaches to address these. Particularly, it proposes to use a \emph{Concrete
 Syntax Tree} to capture and maintain code comments, which are usually not
 included in parse results. But they are needed to restore the text of parsed
 source code faithfully.
 \end{abstract}
 
-\section{The Problem}
+\section{Introduction}
 Pretty-printing is a little discussed issue, although it is not
 far-fetched. Many IDEs provide automatic code layout, as well do many command
 line tools. But it poses a significant
@@ -28,10 +28,150 @@ challenge: the handling of code comments. Parser and compiler writers
 frequently waive their hands, as comments in code are treated as white space and
 are usually ignored during parsing.
 
+\subsection{Application background}
+
+As background information, this report is based on experiences gleaned from
+writing a custom pretty-printer for the JavaScript programming language. The
+implementation language for the pretty-printer was Python. But all results are
+general enough that they should be applicable to different implementation and
+object languages, as long as the object language has a comparable way to compose
+comments.
+
+\subsection{JavaScript comments - a quick look}
+
+JavaScript has C++-like comments. Just as a reminder, here are the two ways you
+can add comments in source code:
+
+\textit{Block comments}
+
+Block comments start with \texttt{/*} and are closed with \texttt{*/}. Nesting
+block comments is not allowed, but a closing tag can be embedded by escaping the
+asterisk, \texttt{\\*/}.
+
+Examples:
+
+\begin{verbatim}
+  /* foo bar baz */
+
+  var a = 3; /* block comment at end of line */
+
+  var b = 4; /* dangling of code
+     and spanning multiple
+     lines */
+
+  var c /* in the middle */ = /* of some expression*/ 5;
+
+\end{verbatim}
+
+\textit{Line-end comments}
+
+Line-end comments start with a double forward slash, \texttt{//}, and extend to
+the end of line, i.e. to the next newline character.
+
+Examples:
+
+\begin{verbatim}
+
+  // foo bar baz
+  
+  var a = 3; // line-end comment
+
+  // no spreading across lines or directly embedding in code
+  var b = 4;
+
+\end{verbatim}
+
 \section{Approaches}
+
+\subsection{The Tokenizer needs to provide Comments as Tokens}
+
+\subsection{Normalizing Indentation of Comments}
+
+
+\section{Comments in Syntax Trees}
+
+If you go down the road of parsing the source text into a syntax tree, there is
+no other way than storing comment tokens with the syntax tree in some way. For
+our purpose here lets assume that the tokenizer is providing the parser with
+comments as atomic tokens, potentially annotated with their type (block or
+line-end) and further properties like number of lines etc. Lets also assume
+that, like in many grammars, a newline character immediately following the
+comment is an own token which is not subsumed into the comment (for line-end
+comments).
+
+The first and fundamental decision is whether to add comment tokens as
+first-class nodes into the syntax tree. While this seems natural and
+straight-forward it makes the parsing of code-level constructs like function
+definitions or while loops extremely complicated. Basically, every such parse
+rule has to account for comments token interspersed into the token stream. A
+parse rule for e.g. a "while" construct deteriorates into something saying "if
+the current token is "while", the next token must be an opening parenthesis - or
+a comment; then comes a condition expression - or a comment; then an opening
+curly - or a comment; ..." and so on and so forth. Parsing rules become tedious
+and complex, and blur the syntactic structure they are trying to capture. One
+might argue that such parsers could be generated, just by adding a flag to the
+parser generator ("--include-comments"). For hand-written parsers it's a
+nightmare.
+
+So the next idea is to keep comment tokens out of the syntax tree. But whither
+then?! Retaining their relation to the syntactical tokens (which comes before,
+which comes after) is essential to restore this order when later serializing the
+tree again. Two options here are attaching the comments as properties to tree
+nodes, or maintaining a dedicated table of comments and linking from the tree
+nodes into that table (see \cite{bartho-2009}). Either way your relate tree nodes to comment nodes in an
+surjective and invertable way, i.e. every comment node is associated with
+exactly one tree node. Tree nodes, though, may be associated with multiple
+comment nodes, simply by the fact that multiple comments can precede or follow a
+syntactical token in the source code.
+
+We decided to attach comments to tree nodes, and such that comments are attached
+to the next \textbf{following} syntactical token. That means the \textit{next}
+function stacks comment tokens until a syntactical token is encountered,
+and then attaches the list of stacked comments to it. This has several implications:
+
+\begin{itemize}
+\item In order to accommodate all comments of the source, there always
+  \textbf{has} to be a next syntactical token. This might not be true if a
+  comment appears as the last token in the token stream, representing the end of
+  the source code. In this case a synthetic \textit{EOF} token is inserted in
+  the tree, to capture all pending comments.
+\end{itemize}
+
+\subsection{Associating Comments with Syntax Nodes}
 
 \section{The best Approximation: Concrete Syntax Trees}
 
-\bibliography{}
+So it seems the best approach is to store comments with the syntax tree, but
+also use a concrete syntax tree that retains all lexems from the tokenizer. 
+
+\section{And finally, Pretty-Printing}
+
+With a syntax tree as described above, serializing the tree back to a text form
+takes the following steps:
+
+\begin{itemize}
+\item You serialize the tree in the usual recursive-descent way, e.g. by using a
+visitor pattern.
+\item For every node you visit, you check if it has comments attached to it.
+\item If so, you serialize these comments first, then the node itself.
+\item In serializing the comments, you evaluate current indentation and line
+information attributed to the comment tokens, in order to integrate them with
+the syntactical code. (This might involve some effort, e.g. distinguishing
+between block and line-end comments, whether to start them at the current or a
+new line, and if they span multiple lines (for block comments), how to indent
+subsequent comment lines before the comment ends. Then, normal indentation
+must be restored for the next code lexeme.)
+\end{itemize}
+
+\section{Conclusion}
+
+In closing, if you want to go the road of constructing a parser tree from source
+code, and then use this parse tree to pretty-print the code, your best bet is to
+employ a concrete syntax tree that captures all lexemes of the token stream. You
+can then associate comment tokens with syntactical tokens, without interfering
+with the grammatical parsing of the source syntax. 
+
+\bibstyle{normal}
+\bibliography{prettyp_comp_writers}
 
 \end{document}
