@@ -5,7 +5,7 @@
 \begin{document}
 \title{Pretty-Printing for Compiler Writers}
 \author{
-Thomas Herchenroeder\\
+Thomas Herchenr\"oder\\
 1\&1 Internet AG
 }
 
@@ -14,49 +14,53 @@ Thomas Herchenroeder\\
 
 %\begin{multicols}{2}
 \begin{abstract} 
-Pretty-printing, i.e. the regularly formatting of source code
-in terms of line breaks and indentation, poses extra challenges to compiler
-writers, namely handling of code comments. This experience report discusses problems and
-approaches to address these. Particularly, it proposes to use a \emph{Concrete
-Syntax Tree} to capture and maintain code comments, which are usually not
-included in parse results. But they are needed to restore the text of parsed
-source code faithfully.
+
+Pretty-printing, i.e. the regularly formatting of source code in terms of line
+breaks and indentation, poses extra challenges to compiler writers, particularly
+the handling of code comments. This experience report discusses the problem of
+pretty-printing specifically through the issue of comment handling. It pursues
+the question how comments are parsed and represented internally, before a new
+version of the source code is produced. It proposes the use of a concrete syntax
+tree to capture and maintain code comments, which are usually not included in
+parse results, but are indispensable for the case of source code
+transformations.
+
+This is a work report that reflects on experiences gathered from a
+concrete project. It does not represent a thorough academic research of the
+issue.  
+
 \end{abstract}
 
-\section{Introduction}
-Pretty-printing is a little discussed issue, although it is not
-far-fetched. Many IDEs provide automatic code layout, as well do many command
-line tools. But it poses a significant
-challenge: the handling of code comments. Parser and compiler writers
-frequently waive their hands, as comments in code are treated as white space and
-are usually ignored during parsing.
+\section{Introduction} 
 
-\subsection{Context}
+Pretty-printing is a rarely discussed issue, although it is not far-fetched.
+Many IDEs provide automatic code layout, and command-line tools allow you to fix
+and standardize code formatting on source files, when coding style guides have
+fallen short. And you face similar challenges when you want to do a high-level
+code-to-code translation of source code.
 
-Pretty-printing can be approached in several ways, and there are several
-contexts where pretty-printing code might be desirable. This paper assumes that
-the goal of pretty-printing is a modified serialized form of the initial source
-code, usually as a file on hard disk.This is crucial as not having to serialize
-at the end (like in an interactive editor or IDE) might lead to different design
-decisions.
+ 
+\subsection{Comments - the main hurdle}
 
-So we picture ourselves in a workflow of \emph{reading code in --
-processing it -- and writing it out again}, like typical command-line tools
-would do. Within this context there are again multiple ways to address the
-\emph{"processing it"} part. Parsing the source code seems to make sense, as we
-want to base text layout decisions on syntactical correctness, like keeping two
-adjacent tokens on the same line when they would have different semantics when
-split across two. So we have to recognize grammatical structures.
+Thinking of grammatical source code, pretty-printing doesn't seem like a big
+endeavor. It can't be so difficult to add a bit of line breaks and whitespace to
+a couple of lines of code, can it?! Maybe you have to re-arranging the start and
+end tokens of blocks a bit, which might require a bit of house keeping, but else?!
 
-Then the question arises what to do with the parsed tokens (or technically
-speaking, which parse actions to deploy). One approach would be to serialize the
-tokens back immediately, applying whitespace as we go along. While tempting and
-with its own strengths, this approach becomes tedious as soon as you have to handle
-deeply nested structures where you want to match begin and end actions.
+But there lies a hidden riff, and this is comments.  Comments are usually
+treated as white space by most parser implementations and literature. But if you
+want to pretty-print code, you need to find a way to retain comments and handle
+them in some way. Comments do not follow strict grammatical rules that predict
+if and when they may appear in text. They usually can be used freely as long as
+they do not interfere with the real code.
 
-So we came out constructing a parse, or syntax, tree, which is a common parse
-result. The serial source text is transfered into a hierarchical tree structure
-where nodes represent atomic code fragments, or \emph{lexemes}.
+What's more, comments are associated with the surrounding code by a special
+processor, the human brain. They get their meaning and relevance more by their
+two-dimensional spacial arrangement within the overall code structure, then by
+a strict and machine-readable rule set. Hence is maintaining the spacial
+orientation of comments in the surrounding code a critical and fragile
+requirement when changing the code layout.
+
 
 \subsection{Application background}
 
@@ -120,7 +124,7 @@ In the remainder of this report I will use the following conventions:
 will refer to latter as \emph{syntactical} elements, meaning they belong to the
 syntax of the programming language proper. I hope this is not offending people.
 
-\item Occasionally, I will represent trees as s-expressions. Subtrees will be
+\item Occasionally, I will represent trees as s-expressions. They will be
 enclosed in parentheses, the root nodes of any subtree will be the first symbol
 in the s-expression (its "car"), children will be the remainder of the
 s-expression (its "cdr"). Separation is by whitespace. So the tree for the
@@ -129,6 +133,20 @@ This is not particularly pleasant to read, but the easiest way to write them
 $\ddot\smile$.
 \end{itemize}
 
+% ----------------------------------------------------------------------------
+% Old Stuff
+% ----------------------------------------------------------------------------
+
+Pretty-printing, i.e. the regular formatting, of programming source code is a neglected art. Quite a few projects do it, such as IDE's like \emph{Eclipse} [citation needed] or command-line tools like \emph{jsbeautifier} [citation needed], but there doesn't seem to be a systematic body of literature for anybody to read up on the issue. This is in stark contrast to the amount of literature about parsing and compiling of program code, which are closely related activities.
+
+This paper will present four approaches to pretty-printing, and discuss some of the considerations surrounding them:
+\begin{itemize}
+  \item Pretty-printing of \emph{Abstract Syntax Trees}
+  \item \emph{Direct pretty-printing} of the stream of tokens coming from the tokenizer/lexer.
+  \item Using a \emph{Concrete Syntax Tree} as the basis for pretty printing.
+\end{itemize}
+
+The next section starts with discussing some basic techniques in parsing comments, and in the following sections each of the above approaches is discussed.
 
 
 %   --------------------------------------------------------------------------
@@ -136,6 +154,32 @@ $\ddot\smile$.
 %   --------------------------------------------------------------------------
 
 \section{Approaching the Issue}
+
+Pretty-printing can be approached in several ways, and there are several
+contexts where pretty-printing code might be desirable. This paper assumes that
+the goal of pretty-printing is a modified serialized form of the initial source
+code, usually as a file on hard disk. This is crucial as not having to serialize
+at the end (like in an interactive editor or IDE) might lead to different design
+decisions.
+
+So we picture ourselves in a workflow of \emph{reading code in --
+processing it -- and writing it out again}, like typical command-line tools
+would do. Within this context there are again multiple ways to address the
+\emph{"processing it"} part. Parsing the source code seems to make sense, as we
+want to base text layout decisions on syntactical correctness, like keeping two
+adjacent tokens on the same line when they would have different semantics when
+split across two. So we have to recognize grammatical structures.
+
+Then the question arises what to do with the parsed tokens (or technically
+speaking, which parse actions to deploy). One approach would be to serialize the
+tokens back immediately, applying whitespace as we go along. While tempting and
+with its own strengths, this approach becomes tedious as soon as you have to handle
+deeply nested structures where you want to match begin and end actions.
+
+So we came out constructing a parse, or syntax, tree, which is a common parse
+result. The serial source text is transfered into a hierarchical tree structure
+where nodes represent atomic code fragments, or \emph{lexemes}.
+
 
 \subsection{Using an Abstract Syntax Tree}
 
