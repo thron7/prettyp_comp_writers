@@ -1,4 +1,6 @@
 \documentclass[11pt,a4paper]{article}
+\usepackage{multicol}
+\usepackage{fullpage}
 
 \begin{document}
 \title{Pretty-Printing for Compiler Writers}
@@ -10,6 +12,7 @@ Thomas Herchenroeder\\
 \date{\today}
 \maketitle
 
+%\begin{multicols}{2}
 \begin{abstract} 
 Pretty-printing, i.e. the regularly formatting of source code
 in terms of line breaks and indentation, poses extra challenges to compiler
@@ -53,7 +56,7 @@ deeply nested structures where you want to match begin and end actions.
 
 So we came out constructing a parse, or syntax, tree, which is a common parse
 result. The serial source text is transfered into a hierarchical tree structure
-where nodes represent elementary code fragments, or \emph{lexemes}.
+where nodes represent atomic code fragments, or \emph{lexemes}.
 
 \subsection{Application background}
 
@@ -107,6 +110,30 @@ Examples:
   var b = 4;
 
 \end{verbatim}
+
+\section{Conventions}
+
+In the remainder of this report I will use the following conventions:
+
+\begin{itemize}
+\item In order to distinguish comments from the "real" code, I
+will refer to latter as \emph{syntactical} elements, meaning they belong to the
+syntax of the programming language proper. I hope this is not offending people.
+
+\item Occasionally, I will represent trees as s-expressions. Subtrees will be
+enclosed in parentheses, the root nodes of any subtree will be the first symbol
+in the s-expression (its "car"), children will be the remainder of the
+s-expression (its "cdr"). Separation is by whitespace. So the tree for the
+expression \texttt{3 + 4 * 5} will be represented as \texttt{(+ 3 (* 4 5))}.
+This is not particularly pleasant to read, but the easiest way to write them
+$\ddot\smile$.
+\end{itemize}
+
+
+
+%   --------------------------------------------------------------------------
+% - APPROACHING THE ISSUE
+%   --------------------------------------------------------------------------
 
 \section{Approaching the Issue}
 
@@ -166,9 +193,14 @@ As we saw, closing brackets of any kind of construct are
 particularly prone to these kinds of problems.
 
 
-
-
 \subsection{The Tokenizer needs to provide Comments as Tokens}
+
+It might not all too obvious, so I am stating it here explicitly. The tokens the
+parser receives from the tokenizer are high-level. It produces not only
+elementary lexemes like keywords, operators or number literals, but also the
+syntactically more complex elements like string literals, regular expression
+literals, line-end and block comments as single tokens.
+
 
 \subsection{Normalizing Indentation of Comments}
 
@@ -198,16 +230,23 @@ might argue that such parsers could be generated, just by adding a flag to the
 parser generator ("--include-comments"). For hand-written parsers it's a
 nightmare.
 
+\subsection{Associating Comments with Syntax Nodes}
+
 So the next idea is to keep comment tokens out of the syntax tree. But whither
-then?! Retaining their relation to the syntactical tokens (which comes before,
+then?! Retaining their relation to the syntactical tokens (which one comes before,
 which comes after) is essential to restore this order when later serializing the
 tree again. Two options here are attaching the comments as properties to tree
-nodes, or maintaining a dedicated table of comments and linking from the tree
-nodes into that table (see \cite{bartho-2009}). Either way your relate tree nodes to comment nodes in an
-surjective and invertable way, i.e. every comment node is associated with
-exactly one tree node. Tree nodes, though, may be associated with multiple
-comment nodes, simply by the fact that multiple comments can precede or follow a
-syntactical token in the source code.
+nodes, or maintaining a dedicated table of comments and later inferring their
+position by comparing positional information of the tree nodes with those of the
+comment entries (see \cite{bartho-2009}). (Bartho actually uses this information
+to insert the comments into the syntax tree once this has been finalized by the
+parser, thereby creating a tree where comments are first-class.)
+
+Either way you relate tree nodes to comment nodes in an surjective and
+invertible way, i.e. every comment node is associated with exactly one tree
+node. Tree nodes, though, may be associated with multiple comment nodes, simply
+by the fact that multiple comments can precede or follow a syntactical token in
+the source code.
 
 We decided to attach comments to tree nodes, and such that comments are attached
 to the next \textbf{following} syntactical token. That means the \textit{next}
@@ -220,9 +259,22 @@ and then attaches the list of stacked comments to it. This has several implicati
   comment appears as the last token in the token stream, representing the end of
   the source code. In this case a synthetic \textit{EOF} token is inserted in
   the tree, to capture all pending comments.
+\item Comments are attached to the lexically next syntactical token. But these
+  tokens are rarely the root symbols of their respective expression. In a
+  snippet like \\
+  \begin{verbatim}
+    // some comment
+    a + b;
+  \end{verbatim}
+  the comment is attached to \emph{a}, but the expressions root node is
+  \emph{+}. As a consequence, locating comments in a subtree often requires
+  looking for the left-most child, or more precisely, for the \emph{head
+  symbol}, the symbol of this subtree that is lexically first. It is
+  recommendable to to unify searching for such a head symbol with the
+  serialization logic, as looking for the head symbol amounts to starting to
+  serializing the subtree and then stopping after the first lexeme. (Python
+  generators lend themselves well to this task as they are lazy.)
 \end{itemize}
-
-\subsection{Associating Comments with Syntax Nodes}
 
 \section{The best Approximation: Concrete Syntax Trees}
 
@@ -259,4 +311,5 @@ with the grammatical parsing of the source syntax.
 \bibliographystyle{plain}
 \bibliography{prettyp_comp_writers}
 
+%\end{multicols}
 \end{document}
