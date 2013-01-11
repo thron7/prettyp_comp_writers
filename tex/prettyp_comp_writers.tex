@@ -1,0 +1,37 @@
+\documentclass[11pt,a4paper]{article}
+
+\begin{document}
+\title{Pretty-Printing for Compiler Writers}
+\author{
+Thomas Herchenroeder\\
+1\&1 Internet AG
+}
+
+\date{\today}
+\maketitle
+
+\begin{abstract} 
+Pretty-printing, i.e. the regularly formatting of source code
+in terms of line breaks and indentation, poses extra challenges to compiler
+writers, namely handling of code comments. This paper discusses problems and
+approaches to address these. Particularly, it proposes to use a \emph{Concrete
+Syntax Tree} to capture and maintain code comments, which are usually not
+included in parse results. But they are needed to restore the text of parsed
+source code faithfully.
+\end{abstract}
+
+\section{The Problem}
+Pretty-printing is a little discussed issue, although it is not
+far-fetched. Many IDEs provide automatic code layout, as well do many command
+line tools. But it poses a significant
+challenge: the handling of code comments. Parser and compiler writers
+frequently waive their hands, as comments in code are treated as white space and
+are usually ignored during parsing.
+
+\section{Approaches}
+
+\section{The best Approximation: Concrete Syntax Trees}
+
+\bibliography{}
+
+\end{document}
