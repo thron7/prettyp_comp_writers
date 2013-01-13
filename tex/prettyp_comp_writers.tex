@@ -131,6 +131,14 @@ s-expression (its "cdr"). Separation is by whitespace. So the tree for the
 expression \texttt{3 + 4 * 5} will be represented as \texttt{(+ 3 (* 4 5))}.
 This is not particularly pleasant to read, but the easiest way to write them
 $\ddot\smile$.
+
+\item I sometime speak of \emph{synthetic} nodes in a tree if these nodes
+  represent a non-terminal in the grammar. That means they do not represent a
+  concrete lexeme but some kind of grouping of grammatical elements. For example,
+  to represent the list of formal parameters of a function declaration in a
+  tree, you might introduce a \emph{param} tree node that takes the list of
+  formal parameters as children. This tree node would be synthetic.
+
 \end{itemize}
 
 % ----------------------------------------------------------------------------
