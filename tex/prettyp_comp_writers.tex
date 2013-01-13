@@ -39,6 +39,8 @@ and standardize code formatting on source files, when coding style guides have
 fallen short. And you face similar challenges when you want to do a high-level
 code-to-code translation of source code.
 
+Pretty-printing, i.e. the regular formatting, of programming source code is a neglected art. Quite a few projects do it, such as IDE's like \emph{Eclipse} [citation needed] or command-line tools like \emph{jsbeautifier} [citation needed], but there doesn't seem to be a systematic body of literature for anybody to read up on the issue. This is in stark contrast to the amount of literature about parsing and compiling of program code, which are closely related activities.
+
  
 \subsection{Comments - the main hurdle}
 
@@ -115,7 +117,7 @@ Examples:
 
 \end{verbatim}
 
-\section{Conventions}
+\subsection{Conventions}
 
 In the remainder of this report I will use the following conventions:
 
@@ -140,22 +142,6 @@ $\ddot\smile$.
   formal parameters as children. This tree node would be synthetic.
 
 \end{itemize}
-
-% ----------------------------------------------------------------------------
-% Old Stuff
-% ----------------------------------------------------------------------------
-
-Pretty-printing, i.e. the regular formatting, of programming source code is a neglected art. Quite a few projects do it, such as IDE's like \emph{Eclipse} [citation needed] or command-line tools like \emph{jsbeautifier} [citation needed], but there doesn't seem to be a systematic body of literature for anybody to read up on the issue. This is in stark contrast to the amount of literature about parsing and compiling of program code, which are closely related activities.
-
-This paper will present four approaches to pretty-printing, and discuss some of the considerations surrounding them:
-\begin{itemize}
-  \item Pretty-printing of \emph{Abstract Syntax Trees}
-  \item \emph{Direct pretty-printing} of the stream of tokens coming from the tokenizer/lexer.
-  \item Using a \emph{Concrete Syntax Tree} as the basis for pretty printing.
-\end{itemize}
-
-The next section starts with discussing some basic techniques in parsing comments, and in the following sections each of the above approaches is discussed.
-
 
 %   --------------------------------------------------------------------------
 % - APPROACHING THE ISSUE
@@ -188,6 +174,64 @@ So we came out constructing a parse, or syntax, tree, which is a common parse
 result. The serial source text is transfered into a hierarchical tree structure
 where nodes represent atomic code fragments, or \emph{lexemes}.
 
+This paper will present four approaches to pretty-printing, and discuss some of the considerations surrounding them:
+\begin{itemize}
+  \item Pretty-printing of \emph{Abstract Syntax Trees}
+  \item \emph{Direct pretty-printing} of the stream of tokens coming from the tokenizer/lexer.
+  \item Using a \emph{Concrete Syntax Tree} as the basis for pretty printing.
+\end{itemize}
+
+The next section starts with discussing some basic techniques in parsing comments, and in the following sections each of the above approaches is discussed.
+
+
+\section{Comments as Tokens}
+
+\subsection{The Tokenizer needs to provide Comments as Tokens}
+
+It might not be all too obvious, so I am stating it here explicitly: The tokens the
+parser receives from the tokenizer need to be high-level. It produces not only
+elementary lexemes like keywords, operators or number literals, but also the
+syntactically more complex elements like string literals, regular expression
+literals, line-end and block comments as single tokens.
+
+It might not be immediately apparent how to achieve this, as delimited entities
+like strings or regular expressions literals often cannot be captured by regular
+expressions. Our solution was to split the lexer into two layers. The first one
+uses regular expressions to recognize only simple elements (interpunction,
+operators, numbers, identifiers). The tokens it produces are then consumed by
+the second layer that recognizes e.g. the start of a string literal and
+accumulates the subsequent tokens into a single string token until the closing
+character (thereby being able to e.g. check for escaped quotation marks). The
+tokens from this second layer are then passed to the actual parser.
+
+
+\subsection{Normalizing Indentation of Comments}
+
+
+\section{Comments in Syntax Trees}
+
+If you go down the road of parsing the source text into a syntax tree, there is
+no other way than storing comment tokens with the syntax tree in some way. For
+our purpose here lets assume that the tokenizer is providing the parser with
+comments as atomic tokens, potentially annotated with their type (block or
+line-end) and further properties like number of lines etc. Lets also assume
+that, like in many grammars, a newline character immediately following the
+comment is an own token which is not subsumed into the comment (for line-end
+comments).
+
+The first and fundamental decision is whether to add comment tokens as
+first-class nodes into the syntax tree. While this seems natural and
+straight-forward it makes the parsing of code-level constructs like function
+definitions or while loops extremely complicated. Basically, every such parse
+rule has to account for comments token interspersed into the token stream. A
+parse rule for e.g. a "while" construct deteriorates into something saying "if
+the current token is "while", the next token must be an opening parenthesis - or
+a comment; then comes a condition expression - or a comment; then an opening
+curly - or a comment; ..." and so on and so forth. Parsing rules become tedious
+and complex, and blur the syntactic structure they are trying to capture. One
+might argue that such parsers could be generated, just by adding a flag to the
+parser generator ("--include-comments"). For hand-written parsers it's a
+nightmare.
 
 \subsection{Using an Abstract Syntax Tree}
 
@@ -243,44 +287,6 @@ but ostensibly with implications for the semantics of the comment.
 
 As we saw, closing brackets of any kind of construct are
 particularly prone to these kinds of problems.
-
-
-\subsection{The Tokenizer needs to provide Comments as Tokens}
-
-It might not all too obvious, so I am stating it here explicitly. The tokens the
-parser receives from the tokenizer are high-level. It produces not only
-elementary lexemes like keywords, operators or number literals, but also the
-syntactically more complex elements like string literals, regular expression
-literals, line-end and block comments as single tokens.
-
-
-\subsection{Normalizing Indentation of Comments}
-
-
-\section{Comments in Syntax Trees}
-
-If you go down the road of parsing the source text into a syntax tree, there is
-no other way than storing comment tokens with the syntax tree in some way. For
-our purpose here lets assume that the tokenizer is providing the parser with
-comments as atomic tokens, potentially annotated with their type (block or
-line-end) and further properties like number of lines etc. Lets also assume
-that, like in many grammars, a newline character immediately following the
-comment is an own token which is not subsumed into the comment (for line-end
-comments).
-
-The first and fundamental decision is whether to add comment tokens as
-first-class nodes into the syntax tree. While this seems natural and
-straight-forward it makes the parsing of code-level constructs like function
-definitions or while loops extremely complicated. Basically, every such parse
-rule has to account for comments token interspersed into the token stream. A
-parse rule for e.g. a "while" construct deteriorates into something saying "if
-the current token is "while", the next token must be an opening parenthesis - or
-a comment; then comes a condition expression - or a comment; then an opening
-curly - or a comment; ..." and so on and so forth. Parsing rules become tedious
-and complex, and blur the syntactic structure they are trying to capture. One
-might argue that such parsers could be generated, just by adding a flag to the
-parser generator ("--include-comments"). For hand-written parsers it's a
-nightmare.
 
 \subsection{Associating Comments with Syntax Nodes}
 
