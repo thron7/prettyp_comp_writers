@@ -143,9 +143,9 @@ $\ddot\smile$.
 
 \end{itemize}
 
-%   --------------------------------------------------------------------------
-% - APPROACHING THE ISSUE
-%   --------------------------------------------------------------------------
+% --------------------------------------------------------------------------
+% APPROACHING THE ISSUE
+% --------------------------------------------------------------------------
 
 \section{Approaching the Issue}
 
@@ -339,6 +339,11 @@ and then attaches the list of stacked comments to it. This has several implicati
 So it seems the best approach is to store comments with the syntax tree, but
 also use a concrete syntax tree that retains all lexems from the tokenizer. 
 
+
+% --------------------------------------------------------------------------
+% And finally, Pretty-Printing
+% --------------------------------------------------------------------------
+
 \section{And finally, Pretty-Printing}
 
 With a syntax tree as described above, serializing the tree back to a text form
@@ -358,6 +363,34 @@ subsequent comment lines before the comment ends. Then, normal indentation
 must be restored for the next code lexeme.
 \end{itemize}
 
+There is also the concern of formatting the comments themselves. For line-end
+comments and single-line block comments this is trivial, as it is just the
+sequence of characters in the token value up to the next newline or the
+end-of-comment sequence, respectively.
+
+For multi-line block comments there are two situations: (a) The block comment
+started and ended on a line of its own. Then only the current indentation has to
+be applied, and the relative indentation of subsequent comment lines has to be
+maintained.  This should be easy after the normalization done when parsing the
+comment (see section "Parsing Comments" TODO), so just the current indentation
+has to be applied to each line in the comment.
+
+(b) The block comment started on the same line as code, i.e. it started as a
+dangling comment. Then the comment's first line has to be placed after the code
+again, potentially with a given offset of spaces between them. But the question
+is how to handle subsequent comment lines. One possibility is to increase the
+indent level for the scope of this comment, so that subsequent comment lines
+appear on their own indentation level. After the comment closes, the indent
+level is then decreased again. This might result in the subsequent comment lines
+beginning at a significant different column than the first, thereby dislocating
+the first line of the comment from the rest. On the other hand, this will give a
+consistent "silhouette" to the left side of the code.
+
+The other possibility is to try to align all the comment lines including the
+first. This might mean that you have to deviate from the current indent level in
+arbitrary ways, i.e. going much father to the left than the indent level would
+suggest.
+
 \section{Conclusion}
 
 In closing, if you want to go the road of constructing a parser tree from source
@@ -365,6 +398,12 @@ code, and then use this parse tree to pretty-print the code, your best bet is to
 employ a concrete syntax tree that captures all lexemes of the token stream. You
 can then associate comment tokens with syntactical tokens, without interfering
 with the grammatical parsing of the source syntax. 
+
+\section{TODO's}
+
+\begin{itemize}
+\item Introduce the term "code silhouette", with source.
+\end{itemize}
 
 \bibliographystyle{plain}
 \bibliography{prettyp_comp_writers}
