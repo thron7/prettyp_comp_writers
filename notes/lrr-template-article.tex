@@ -1,0 +1,261 @@
+
+\documentclass{article}
+\bibliographystyle{livrevrel}
+
+\usepackage{epubtk}    % calls hyperref, fancyvrb, and LRR macros
+\usepackage{booktabs}  % possibly also \usepackage{longtable}
+\usepackage{graphicx}  % must come after epubtk
+
+
+%=================================================
+
+
+\begin{document}
+
+\title{\LaTeX\ Template for Living Reviews in Relativity}
+
+\author{\epubtkAuthorData{Firstname Lastname}{%
+Affiliations \\
+Address}{%
+your@email.address}{%
+http://your.www.address}%
+\and
+\epubtkAuthorData{myFirst myLast}{%
+where \\
+here}{%
+your@email.address}{%
+http://your.www.address}
+\and
+\epubtkAuthorData{Somebody Else}{%
+where \\
+elsewhere}{%
+your@email.address}{%
+http://your.www.address}
+}
+
+\date{}
+\maketitle
+
+\begin{abstract}
+Text Text Text  Text Text Text Text Text Text Text Text Text  Text
+Text Text Text Text Text Text Text Text  Text Text Text Text Text Text
+Text Text Text  Text Text Text Text Text Text Text Text Text  Text
+Text Text Text Text Text Text Text Text  Text Text Text Text Text Text
+Text Text Text  Text Text Text Text Text.
+\end{abstract}
+
+\epubtkKeywords{Text, Text text, Text text text}
+
+
+\newpage
+
+%=================================================
+
+\section{Section One}
+\label{sec:section}
+
+%\include{Section-One}
+%% co-authors might want to edit and include sections separately
+
+Text Text Text Text Text Text Text Text  Text Text Text Text Text Text
+Text Text\epubtkFootnote{This is a footnote.} Text Text Text Text
+%% LRSP footnote macro
+Text Text Text Text Text Text Text Text Text Text Text Text Text Text
+Text Text Text~\cite{authorYear} Text Text Text Text Text Text Text
+%% please, use the \cite command
+Text Text Text Text Text Text Text Text Text Text Text Text Text Text 
+Text Text Text Text Text Text~\cite{otherAuthorYear} Text Text Text Text
+Text Text Text Text Text Text Text Text Text Text Text Text Text Text 
+Text Text Text Text Text \emph{emphasize something} Text Text Text Text. 
+%
+\begin{equation}
+  a + b = c \,,
+  \label{eq:equation1}
+\end{equation}
+%
+Text Text Text Text Text Text Text Text Text Text Text Text Text Text 
+Text Text Text  Text $ a + b = c $ Text Text Text Text Text Text Text 
+Text Text Text Text Text Text Text Text Text Text Text Text Text Text.
+%
+\begin{eqnarray}
+ y &=& x^4 + 4          \nonumber \\
+   &=& (x^2 + 2)^2 -4x^2 \nonumber \\
+   &\le& (x^2 + 2)^2 \,.
+ \label{eq:equation2}
+\end{eqnarray}
+
+Text Text Text Text Text Text Text Text Text Text Text Text Text Text 
+Text Text Text Text Text Text Text Text Text Text Text Text Text
+Text. 
+
+\newpage
+
+%=================================================
+
+\section{Section Two}
+\label{sec:section2}
+
+%\include{Section-Two}
+%% co-authors might want to edit and include sections separately
+
+Text Text Text Text Text Text Text Text Text Text Text Text Text Text 
+Table~\ref{tab:table01} shows that Text Text Text Text Text Text Text Text 
+%% reference to table
+Text Text Text Text Text Text.
+
+\begin{table}[htbp]
+  \caption{Table caption.}
+  \label{tab:table01}
+  \centering
+  \begin{tabular}{llll}
+    \toprule
+    head1 & head2 & head3 & head4\\
+    \midrule
+    row1 & row1 & row1 & row1\\
+    row2 & row2 & row2 & row2\\
+    row3 & row3 & row3 & row3\\
+    row4 & row4 & row4 & row4\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Text Text Text  Text Text Text Figure~\ref{fig:figure01} shows that the
+%% reference to figure
+above Text Text Text  Text Text Text Text Text Text  Text Text Text 
+Text Text Text  Text Text TeText Text Text  Text Text Text  
+
+%% LRSP figure macro: 
+
+\epubtkImage{}{%
+  \begin{figure}[htbp]
+    %\centerline{\includegraphics[width=0.9\textwidth]{fig01}}
+    \caption{Figure caption. From \cite{authorYear}.}
+    \label{fig:figure01}
+\end{figure}}
+
+
+%% multiple figures:
+
+\epubtkImage{}{%
+  \begin{figure}[htbp]
+    \centerline{
+      %\includegraphics[width=0.45\textwidth]{fig02}
+      %\includegraphics[width=0.45\textwidth]{fig03}
+    }
+    \caption{Figure caption. From \cite{authorYear}.}
+    \label{fig:figure02}
+\end{figure}}
+
+%% movies:
+
+\epubtkMovie{movie.mpeg}{movieStill.png}{%
+  \begin{figure}[htbp]
+    %\centerline{\includegraphics[width=0.9\textwidth]{movieStill}}
+    \caption{Movie caption.}
+    \label{fig:movie01}
+\end{figure}}
+
+%% please remove the " % " symbol from \centerline{\includegraphics...
+
+
+\newpage
+
+%=================================================
+
+\section{Section Three}
+\label{sec:section3}
+
+%\include{Section-Three}
+%% co-authors might want to edit and include sections separately
+
+Text Text Text Text Text Text Text Text Text Text Text Text Text Text 
+Text Text Text Text Text Text Text Text Text Text Text Text Text Text 
+Text Text Text Text Text Text Text Text Text Text Text Text Text Text 
+Text Text Text Text Text Text Text Text Text Text Text Text Text Text. 
+
+
+\subsection{Subsection}
+\label{sec:subsection}
+
+Text Text Text Text Text Text Text Text Text Text Text Text Text Text 
+Text Text Text Text Text Text Text Text Text Text Text Text Text Text.
+
+
+\subsubsection{Subsubsection}
+\label{sec:subsection}
+
+Text Text Text Text Text Text Text Text Text Text Text Text Text Text 
+Text Text Text Text Text Text Text Text Text Text Text Text Text Text.
+
+
+\paragraph*{Paragraph}
+
+Text Text Text Text Text Text Text Text Text Text Text Text Text Text 
+Text Text Text Text Text Text Text Text Text Text Text Text Text Text.
+
+
+
+\newpage
+
+%=================================================
+
+\section{List Environments}
+\label{section:lists}
+
+Here you will find an example for each of the above list environments:
+
+\begin{itemize}
+\item First item.
+\item Second item.
+  \begin{itemize}
+  \item First subitem.
+  \item Second subitem.
+  \end{itemize}
+\end{itemize}
+
+
+\begin{enumerate}
+\item This is an item which contains text that is more than one line
+  long. It will be broken correctly at the line end.
+\item That is the second item, which contains two subitems.
+  \begin{enumerate}
+  \item This is an item which contains text that is more than one line
+    long. It will be broken correctly at the line end.
+  \item \dots
+  \end{enumerate}
+\end{enumerate}
+
+
+\begin{description}
+\item[Item 1.]Here comes the text.
+\item[Item 2.]Text for the second item.
+  \begin{description}
+  \item[Subitem 1.]Here comes the text.
+  \item[Subitem 2.]Text for the second subitem.
+  \end{description}
+\end{description}
+
+
+\newpage
+
+%=================================================
+
+\section{Acknowledgements}
+\label{sec:acknowledgements}
+
+Here the acknowledgments can be included.
+
+\newpage
+
+%=================================================
+
+
+% To use the bibtex bibliography in 'lrr-template-refs.bib' do:
+% 'latex lrr-template-article'
+% 'bibtex lrr-template-article'
+% 'latex lrr-template-article'
+% 'latex lrr-template-article'
+
+\bibliography{lrr-template-refs}
+
+\end{document}
